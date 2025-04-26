@@ -12,7 +12,7 @@ services:
       - "8053:8053/tcp" # DNS-over-HTTP service (use with reverse proxy)
     environment:
       - DNS_SERVER_DOMAIN=ns1.dotinternetbd.com
-      - DNS_SERVER_ADMIN_PASSWORD=Dot@134732#
+      - DNS_SERVER_ADMIN_PASSWORD=technitiam@password1#
       - DNS_SERVER_WEB_SERVICE_ENABLE_HTTPS=true
       - DNS_SERVER_OPTIONAL_PROTOCOL_DNS_OVER_HTTP=true
       - DNS_SERVER_WEB_SERVICE_HTTP_PORT=8053
