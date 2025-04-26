@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  technitium-dns:
+    container_name: technitium-dns
+    hostname: ns1
+    image: technitium/dns-server:latest
+    ports:
+      - "53:53/udp"   # DNS service
+      - "53:53/tcp"   # DNS service
+      - "853:853/tcp" # DNS-over-TLS service
+      - "8053:8053/tcp" # DNS-over-HTTP service (use with reverse proxy)
+    environment:
+      - DNS_SERVER_DOMAIN=ns1.dotinternetbd.com
+      - DNS_SERVER_ADMIN_PASSWORD=Dot@134732#
+      - DNS_SERVER_WEB_SERVICE_ENABLE_HTTPS=true
+      - DNS_SERVER_OPTIONAL_PROTOCOL_DNS_OVER_HTTP=true
+      - DNS_SERVER_WEB_SERVICE_HTTP_PORT=8053
+      - DNS_SERVER_WEB_SERVICE_HTTPS_PORT=53443
+      - DNS_SERVER_RECURSION=Allow
+      - DNS_SERVER_ENABLE_BLOCKING=false  # Fixed typo
+      - DNS_SERVER_FORWARDERS=1.1.1.1,8.8.8.8
+      - DNS_SERVER_LOG_USING_LOCAL_TIME=true
+    volumes:
+      - ./config:/etc/dns
+    restart: always
+    sysctls:
+      - net.ipv4.ip_local_port_range=1024 65000
+
+  certbot:
+    image: certbot/certbot
+    container_name: certbot
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - /var/www/certbot:/var/www/certbot
+    entrypoint: 
+      - sh
+      - -c
+      - |
+        certbot certonly --webroot -w /var/www/certbot \
+          --email noc@dotinternet.com.bd \
+          --agree-tos \
+          --no-eff-email \
+          --rsa-key-size 4096 \
+          --domains ns1.dotinternetbd.com
+    depends_on:
+      - reverse-proxy
+
+  reverse-proxy:
+    container_name: reverse-proxy
+    image: nginx:latest
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /var/www/certbot:/var/www/certbot
+      - /etc/letsencrypt:/etc/letsencrypt
+    restart: always
+    depends_on:
+      - technitium-dns
